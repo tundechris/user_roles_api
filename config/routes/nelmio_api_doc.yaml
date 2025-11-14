@@ -1,13 +1,4 @@
-# Swagger UI endpoint
-app.swagger_ui:
-    path: /api/doc
-    methods: GET
-    defaults:
-        _controller: Nelmio\ApiDocBundle\Controller\SwaggerUiController
-
-# JSON documentation endpoint
-app.swagger_json:
+# OpenAPI JSON documentation endpoint
+app.openapi:
     path: /api/doc.json
-    methods: GET
-    defaults:
-        _controller: Nelmio\ApiDocBundle\Controller\DocumentationController
+    controller: nelmio_api_doc.controller.swagger
