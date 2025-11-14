@@ -1,9 +1,15 @@
+# Swagger UI endpoint
 app.swagger_ui:
     path: /api/doc
     methods: GET
-    defaults: { _controller: nelmio_api_doc.controller.swagger_ui }
+    defaults:
+        _controller: nelmio_api_doc.controller.redocly
+        area: default
 
-app.swagger:
+# JSON documentation endpoint
+app.swagger_json:
     path: /api/doc.json
     methods: GET
-    defaults: { _controller: nelmio_api_doc.controller.swagger }
+    defaults:
+        _controller: nelmio_api_doc.controller.swagger_json
+        area: default
