@@ -30,20 +30,47 @@ A RESTful API for managing users and roles with JWT authentication and authoriza
 
 ## Installation
 
-### 1. Clone the repository
+### Quick Setup (Recommended)
+
+Use the Makefile for automated setup:
+
+```bash
+# Clone the repository
+git clone https://github.com/tundechris/user_roles_api.git
+cd user_roles_api
+
+# Run automated setup
+make setup
+
+# Edit .env with your database credentials
+# Then create and migrate the database
+make db-create
+make db-migrate
+
+# Start the development server
+make serve
+```
+
+Run `make help` to see all available commands.
+
+### Manual Setup
+
+If you prefer manual setup, follow these steps:
+
+#### 1. Clone the repository
 
 ```bash
 git clone https://github.com/tundechris/user_roles_api.git
 cd user_roles_api
 ```
 
-### 2. Install dependencies
+#### 2. Install dependencies
 
 ```bash
 composer install
 ```
 
-### 3. Configure environment
+#### 3. Configure environment
 
 Copy the example environment file and update it with your settings:
 
@@ -65,26 +92,48 @@ DATABASE_URL="mysql://user:password@127.0.0.1:3306/user_roles_api?serverVersion=
 # PostgreSQL:
 # DATABASE_URL="postgresql://user:password@127.0.0.1:5432/user_roles_api?serverVersion=15&charset=utf8"
 
-# JWT settings (already configured, keys are generated)
+# JWT settings (keys will be generated in next step)
 JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
 JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
 JWT_PASSPHRASE=
 JWT_TOKEN_TTL=3600
 ```
 
-### 4. Create the database
+#### 4. Generate JWT keys
+
+**IMPORTANT:** This step is required for JWT authentication to work.
+
+```bash
+# Create JWT directory and generate keys
+mkdir -p config/jwt
+php bin/console lexik:jwt:generate-keypair
+```
+
+This will create:
+- `config/jwt/private.pem` - Private key for signing tokens
+- `config/jwt/public.pem` - Public key for verifying tokens
+
+**Note:** The `config/jwt/` directory is gitignored for security. You must generate these keys on each environment (local, staging, production).
+
+#### 5. Create the database
 
 ```bash
 php bin/console doctrine:database:create
 ```
 
-### 5. Run migrations
+#### 6. Run migrations
 
 ```bash
 php bin/console doctrine:migrations:migrate
 ```
 
-### 6. Start the development server
+#### 7. (Optional) Load sample data
+
+```bash
+php bin/console doctrine:fixtures:load
+```
+
+#### 8. Start the development server
 
 ```bash
 symfony server:start
@@ -93,6 +142,38 @@ php -S localhost:8000 -t public/
 ```
 
 The API will be available at `http://localhost:8000/api`
+
+## Makefile Commands
+
+The project includes a Makefile for common development tasks. Run `make help` to see all available commands:
+
+### Setup & Installation
+- `make setup` - Complete automated setup (install, env, jwt, instructions)
+- `make install` - Install composer dependencies
+- `make env-setup` - Create .env from .env.example
+- `make jwt-generate` - Generate JWT public/private keys
+
+### Database
+- `make db-create` - Create the database
+- `make db-migrate` - Run database migrations
+- `make db-reset` - Drop, create and migrate database (⚠ DESTRUCTIVE)
+- `make db-fixtures` - Load database fixtures
+- `make migration` - Create a new migration
+
+### Testing
+- `make test` - Run all tests
+- `make test-unit` - Run unit tests only
+- `make test-integration` - Run integration tests only
+- `make test-functional` - Run functional tests only
+
+### Development
+- `make serve` - Start development server
+- `make cache-clear` - Clear application cache
+- `make routes` - Show all routes
+- `make services` - Show all services
+- `make validate` - Validate database schema
+- `make lint` - Lint PHP files
+- `make clean` - Clean var/ directory (cache, logs)
 
 ## API Endpoints
 
