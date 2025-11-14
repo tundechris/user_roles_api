@@ -30,33 +30,6 @@ A RESTful API for managing users and roles with JWT authentication and authoriza
 
 ## Installation
 
-### Quick Setup (Recommended)
-
-Use the Makefile for automated setup:
-
-```bash
-# Clone the repository
-git clone https://github.com/tundechris/user_roles_api.git
-cd user_roles_api
-
-# Run automated setup
-make setup
-
-# Edit .env with your database credentials
-# Then create and migrate the database
-make db-create
-make db-migrate
-
-# Start the development server
-make serve
-```
-
-Run `make help` to see all available commands.
-
-### Manual Setup
-
-If you prefer manual setup, follow these steps:
-
 #### 1. Clone the repository
 
 ```bash
@@ -143,37 +116,55 @@ php -S localhost:8000 -t public/
 
 The API will be available at `http://localhost:8000/api`
 
-## Makefile Commands
+## Test Data Fixtures
 
-The project includes a Makefile for common development tasks. Run `make help` to see all available commands:
+The project includes comprehensive test fixtures for development and testing purposes. Load them using:
 
-### Setup & Installation
-- `make setup` - Complete automated setup (install, env, jwt, instructions)
-- `make install` - Install composer dependencies
-- `make env-setup` - Create .env from .env.example
-- `make jwt-generate` - Generate JWT public/private keys
+```bash
+php bin/console doctrine:fixtures:load
+```
 
-### Database
-- `make db-create` - Create the database
-- `make db-migrate` - Run database migrations
-- `make db-reset` - Drop, create and migrate database (⚠ DESTRUCTIVE)
-- `make db-fixtures` - Load database fixtures
-- `make migration` - Create a new migration
+### Available Test Users
 
-### Testing
-- `make test` - Run all tests
-- `make test-unit` - Run unit tests only
-- `make test-integration` - Run integration tests only
-- `make test-functional` - Run functional tests only
+After loading fixtures, the following test accounts are available:
 
-### Development
-- `make serve` - Start development server
-- `make cache-clear` - Clear application cache
-- `make routes` - Show all routes
-- `make services` - Show all services
-- `make validate` - Validate database schema
-- `make lint` - Lint PHP files
-- `make clean` - Clean var/ directory (cache, logs)
+| Username | Email | Password | Roles | Status |
+|----------|-------|----------|-------|--------|
+| superadmin | superadmin@example.com | SuperAdmin123! | ROLE_SUPER_ADMIN | Active |
+| admin | admin@example.com | Admin123! | ROLE_ADMIN | Active |
+| moderator | moderator@example.com | Moderator123! | ROLE_MODERATOR | Active |
+| poweruser | power.user@example.com | Power123! | ROLE_ADMIN, ROLE_MODERATOR | Active |
+| johndoe | john.doe@example.com | User123! | ROLE_USER | Active |
+| janedoe | jane.doe@example.com | User123! | ROLE_USER | Active |
+| alice | alice@example.com | Alice123! | ROLE_USER | Active |
+| bob | bob@example.com | Bob123! | ROLE_USER | Active |
+| charlie | charlie@example.com | Charlie123! | ROLE_USER | Active |
+| inactiveuser | inactive@example.com | Inactive123! | ROLE_USER | Inactive |
+
+### Available Roles
+
+| Role Name | Description | Permissions |
+|-----------|-------------|-------------|
+| ROLE_USER | Standard user with basic access | read:own-profile, update:own-profile |
+| ROLE_MODERATOR | Moderator with extended permissions | read:own-profile, update:own-profile, read:users, moderate:content |
+| ROLE_ADMIN | Administrator with full user management | read:own-profile, update:own-profile, read:users, create:users, update:users, delete:users, read:roles, assign:roles |
+| ROLE_SUPER_ADMIN | Super administrator with complete system access | read:*, create:*, update:*, delete:*, manage:system |
+
+You can use these accounts to test authentication, authorization, and different permission levels.
+
+## API Documentation
+
+Interactive API documentation is available via Swagger UI:
+
+```
+http://localhost:8000/api/doc
+```
+
+You can explore all endpoints, view request/response schemas, and test API calls directly from the browser. The OpenAPI specification JSON is available at:
+
+```
+http://localhost:8000/api/doc.json
+```
 
 ## API Endpoints
 
@@ -567,7 +558,7 @@ For issues and questions, please create an issue in the GitHub repository.
 - [ ] Implement password reset functionality
 - [ ] Add email verification for new users
 - [ ] Implement rate limiting
-- [ ] Add API documentation (Swagger/OpenAPI)
+- [x] Add API documentation (Swagger/OpenAPI) - Completed
 - [ ] Add more comprehensive test coverage
 - [ ] Implement user activity logging
 - [ ] Add role permissions enforcement via Voters
