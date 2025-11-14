@@ -1,4 +1,13 @@
-# Load Nelmio API Doc routes
-app.nelmio_api_doc:
-    resource: '@NelmioApiDocBundle/Resources/config/routing/ui.xml'
-    prefix: /api/doc
+# Swagger UI endpoint
+app.swagger_ui:
+    path: /api/doc
+    methods: GET
+    defaults:
+        _controller: nelmio_api_doc.controller.swagger_ui
+
+# JSON documentation endpoint
+app.swagger_json:
+    path: /api/doc.json
+    methods: GET
+    defaults:
+        _controller: nelmio_api_doc.controller.swagger
