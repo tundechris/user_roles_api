@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Service\UserService;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +23,36 @@ class UserController extends AbstractController
     /**
      * List all users.
      */
+    #[OA\Get(
+        path: '/api/users',
+        summary: 'List all users',
+        security: [['Bearer' => []]],
+        tags: ['Users'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successful operation',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'status', type: 'string', example: 'success'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'id', type: 'integer', example: 1),
+                                    new OA\Property(property: 'username', type: 'string', example: 'johndoe'),
+                                    new OA\Property(property: 'email', type: 'string', example: 'john@example.com'),
+                                    new OA\Property(property: 'isActive', type: 'boolean', example: true)
+                                ],
+                                type: 'object'
+                            )
+                        )
+                    ]
+                )
+            )
+        ]
+    )]
     #[Route('', name: 'list', methods: ['GET'])]
     public function list(): JsonResponse
     {
@@ -50,6 +81,43 @@ class UserController extends AbstractController
     /**
      * Get user by ID.
      */
+    #[OA\Get(
+        path: '/api/users/{id}',
+        summary: 'Get user by ID',
+        security: [['Bearer' => []]],
+        tags: ['Users'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'integer'),
+                example: 1
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successful operation',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'status', type: 'string', example: 'success'),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'integer', example: 1),
+                                new OA\Property(property: 'username', type: 'string', example: 'johndoe'),
+                                new OA\Property(property: 'email', type: 'string', example: 'john@example.com'),
+                                new OA\Property(property: 'isActive', type: 'boolean', example: true)
+                            ],
+                            type: 'object'
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: 'User not found')
+        ]
+    )]
     #[Route('/{id}', name: 'show', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function show(int $id): JsonResponse
     {
@@ -85,6 +153,46 @@ class UserController extends AbstractController
     /**
      * Create new user.
      */
+    #[OA\Post(
+        path: '/api/users',
+        summary: 'Create new user',
+        security: [['Bearer' => []]],
+        tags: ['Users'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['username', 'email', 'password'],
+                properties: [
+                    new OA\Property(property: 'username', type: 'string', example: 'johndoe'),
+                    new OA\Property(property: 'email', type: 'string', format: 'email', example: 'john@example.com'),
+                    new OA\Property(property: 'password', type: 'string', format: 'password', example: 'secret123'),
+                    new OA\Property(property: 'isActive', type: 'boolean', example: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'User created successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'status', type: 'string', example: 'success'),
+                        new OA\Property(property: 'message', type: 'string', example: 'User created successfully'),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'integer', example: 1),
+                                new OA\Property(property: 'username', type: 'string', example: 'johndoe'),
+                                new OA\Property(property: 'email', type: 'string', example: 'john@example.com')
+                            ],
+                            type: 'object'
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: 'Invalid input data')
+        ]
+    )]
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {

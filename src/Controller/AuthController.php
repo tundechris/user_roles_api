@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Service\UserService;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,6 +35,33 @@ class AuthController extends AbstractController
      *     "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
      * }
      */
+    #[OA\Post(
+        path: '/api/auth/login',
+        summary: 'User login',
+        tags: ['Authentication'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['username', 'password'],
+                properties: [
+                    new OA\Property(property: 'username', type: 'string', example: 'johndoe'),
+                    new OA\Property(property: 'password', type: 'string', format: 'password', example: 'secret123')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successful login',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'token', type: 'string', example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...')
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Invalid credentials')
+        ]
+    )]
     #[Route('/login', name: 'login', methods: ['POST'])]
     public function login(): never
     {
@@ -52,6 +80,46 @@ class AuthController extends AbstractController
      *     "password": "string"
      * }
      */
+    #[OA\Post(
+        path: '/api/auth/register',
+        summary: 'User registration',
+        tags: ['Authentication'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['username', 'email', 'password'],
+                properties: [
+                    new OA\Property(property: 'username', type: 'string', example: 'johndoe'),
+                    new OA\Property(property: 'email', type: 'string', format: 'email', example: 'john@example.com'),
+                    new OA\Property(property: 'password', type: 'string', format: 'password', example: 'secret123')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'User registered successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'status', type: 'string', example: 'success'),
+                        new OA\Property(property: 'message', type: 'string', example: 'User registered successfully'),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'integer', example: 1),
+                                new OA\Property(property: 'username', type: 'string', example: 'johndoe'),
+                                new OA\Property(property: 'email', type: 'string', example: 'john@example.com'),
+                                new OA\Property(property: 'isActive', type: 'boolean', example: true),
+                                new OA\Property(property: 'createdAt', type: 'string', format: 'date-time')
+                            ],
+                            type: 'object'
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: 'Invalid input data')
+        ]
+    )]
     #[Route('/register', name: 'register', methods: ['POST'])]
     public function register(Request $request): JsonResponse
     {
