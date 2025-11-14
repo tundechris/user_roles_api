@@ -133,4 +133,42 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    /**
+     * Find active users with pagination.
+     *
+     * @return array{users: User[], total: int, page: int, limit: int, total_pages: int}
+     */
+    public function findPaginated(int $page = 1, int $limit = 20): array
+    {
+        $query = $this->createQueryBuilder('u')
+            ->leftJoin('u.roles', 'r')
+            ->addSelect('r')
+            ->where('u.isActive = :active')
+            ->setParameter('active', true)
+            ->orderBy('u.createdAt', 'DESC');
+
+        // Count total before pagination
+        $countQuery = clone $query;
+        $total = (int) $countQuery
+            ->select('COUNT(DISTINCT u.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        // Apply pagination
+        $offset = ($page - 1) * $limit;
+        $users = $query
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'users' => $users,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => (int) ceil($total / $limit)
+        ];
+    }
 }

@@ -211,13 +211,80 @@ Content-Type: application/json
 **Response:**
 ```json
 {
-    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+    "refresh_token": "a1b2c3d4e5f6...",
+    "expires_in": 3600,
+    "refresh_expires_in": 2592000
 }
 ```
 
-Use the token in subsequent requests:
+Use the access token in subsequent requests:
 ```http
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...
+```
+
+**Note:** The access token expires after 1 hour. Use the refresh token to get a new access token without re-authenticating.
+
+#### Refresh Token
+```http
+POST /api/auth/refresh
+Content-Type: application/json
+
+{
+    "refresh_token": "a1b2c3d4e5f6..."
+}
+```
+
+**Response:**
+```json
+{
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+    "refresh_token": "x9y8z7w6v5u4...",
+    "expires_in": 3600,
+    "refresh_expires_in": 2592000
+}
+```
+
+**Note:** Both the access token and refresh token are rotated (old tokens are revoked, new ones issued).
+
+#### Request Password Reset
+```http
+POST /api/auth/password-reset/request
+Content-Type: application/json
+
+{
+    "email": "john@example.com"
+}
+```
+
+**Response:**
+```json
+{
+    "status": "success",
+    "message": "If the email exists, a password reset link has been sent",
+    "reset_token": "abc123xyz789..." // Only in development mode
+}
+```
+
+**Note:** For security, the response is always successful regardless of whether the email exists. In production, a reset link would be sent via email. In development mode, the token is included in the response for testing.
+
+#### Confirm Password Reset
+```http
+POST /api/auth/password-reset/confirm
+Content-Type: application/json
+
+{
+    "token": "abc123xyz789...",
+    "password": "newSecurePassword123"
+}
+```
+
+**Response:**
+```json
+{
+    "status": "success",
+    "message": "Password has been reset successfully"
+}
 ```
 
 ### User Management
@@ -226,8 +293,33 @@ All user endpoints require authentication (except registration).
 
 #### List all users
 ```http
-GET /api/users
+GET /api/users?page=1&limit=20
 Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page, max 100 (default: 20)
+
+**Response:**
+```json
+{
+    "status": "success",
+    "data": [
+        {
+            "id": 1,
+            "username": "johndoe",
+            "email": "john@example.com",
+            "isActive": true
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 150,
+        "total_pages": 8
+    }
+}
 ```
 
 #### Get user by ID
@@ -309,8 +401,32 @@ All role endpoints require authentication.
 
 #### List all roles
 ```http
-GET /api/roles
+GET /api/roles?page=1&limit=20
 Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page, max 100 (default: 20)
+
+**Response:**
+```json
+{
+    "status": "success",
+    "data": [
+        {
+            "id": 1,
+            "name": "ROLE_ADMIN",
+            "description": "Administrator role"
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 50,
+        "total_pages": 3
+    }
+}
 ```
 
 #### Get role by ID
@@ -553,9 +669,9 @@ For issues and questions, please create an issue in the GitHub repository.
 
 ## TODO / Future Enhancements
 
-- [ ] Implement token refresh mechanism
-- [ ] Add pagination for list endpoints
-- [ ] Implement password reset functionality
+- [x] Implement token refresh mechanism - Completed
+- [x] Add pagination for list endpoints - Completed
+- [x] Implement password reset functionality - Completed
 - [ ] Add email verification for new users
 - [ ] Implement rate limiting
 - [x] Add API documentation (Swagger/OpenAPI) - Completed
@@ -563,6 +679,7 @@ For issues and questions, please create an issue in the GitHub repository.
 - [ ] Implement user activity logging
 - [ ] Add role permissions enforcement via Voters
 - [ ] Docker containerization
+- [ ] Email sending service for password reset notifications
 
 ---
 

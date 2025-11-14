@@ -133,6 +133,22 @@ class RoleService
     }
 
     /**
+     * Find roles with pagination.
+     *
+     * @return array{roles: Role[], total: int, page: int, limit: int, total_pages: int}
+     */
+    public function findRolesPaginated(int $page = 1, int $limit = 20): array
+    {
+        // Ensure page is at least 1
+        $page = max(1, $page);
+
+        // Ensure limit is between 1 and 100
+        $limit = max(1, min(100, $limit));
+
+        return $this->roleRepository->findPaginated($page, $limit);
+    }
+
+    /**
      * Get role with users.
      */
     public function getRoleWithUsers(int $id): ?Role

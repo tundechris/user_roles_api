@@ -21,13 +21,31 @@ class RoleController extends AbstractController
     ) {}
 
     /**
-     * List all roles.
+     * List all roles with pagination.
      */
     #[OA\Get(
         path: '/api/roles',
         summary: 'List all roles',
         security: [['Bearer' => []]],
         tags: ['Roles'],
+        parameters: [
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer', default: 1),
+                description: 'Page number',
+                example: 1
+            ),
+            new OA\Parameter(
+                name: 'limit',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer', default: 20, minimum: 1, maximum: 100),
+                description: 'Items per page (max 100)',
+                example: 20
+            )
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -46,6 +64,16 @@ class RoleController extends AbstractController
                                 ],
                                 type: 'object'
                             )
+                        ),
+                        new OA\Property(
+                            property: 'pagination',
+                            properties: [
+                                new OA\Property(property: 'page', type: 'integer', example: 1),
+                                new OA\Property(property: 'limit', type: 'integer', example: 20),
+                                new OA\Property(property: 'total', type: 'integer', example: 50),
+                                new OA\Property(property: 'total_pages', type: 'integer', example: 3)
+                            ],
+                            type: 'object'
                         )
                     ]
                 )
@@ -53,12 +81,15 @@ class RoleController extends AbstractController
         ]
     )]
     #[Route('', name: 'list', methods: ['GET'])]
-    public function list(): JsonResponse
+    public function list(Request $request): JsonResponse
     {
         try {
-            $roles = $this->roleService->findAllRoles();
+            $page = (int) $request->query->get('page', 1);
+            $limit = (int) $request->query->get('limit', 20);
 
-            $data = $this->serializer->normalize($roles, null, [
+            $result = $this->roleService->findRolesPaginated($page, $limit);
+
+            $data = $this->serializer->normalize($result['roles'], null, [
                 'groups' => ['role:read'],
                 'circular_reference_handler' => function ($object) {
                     return $object->getId();
@@ -67,7 +98,13 @@ class RoleController extends AbstractController
 
             return $this->json([
                 'status' => 'success',
-                'data' => $data
+                'data' => $data,
+                'pagination' => [
+                    'page' => $result['page'],
+                    'limit' => $result['limit'],
+                    'total' => $result['total'],
+                    'total_pages' => $result['total_pages']
+                ]
             ]);
         } catch (\Exception $e) {
             return $this->json([

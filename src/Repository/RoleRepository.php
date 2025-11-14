@@ -118,4 +118,39 @@ class RoleRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Find roles with pagination.
+     *
+     * @return array{roles: Role[], total: int, page: int, limit: int, total_pages: int}
+     */
+    public function findPaginated(int $page = 1, int $limit = 20): array
+    {
+        $query = $this->createQueryBuilder('r')
+            ->leftJoin('r.users', 'u')
+            ->addSelect('u')
+            ->orderBy('r.name', 'ASC');
+
+        // Count total before pagination
+        $total = (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        // Apply pagination
+        $offset = ($page - 1) * $limit;
+        $roles = $query
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'roles' => $roles,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => (int) ceil($total / $limit)
+        ];
+    }
 }
