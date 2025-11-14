@@ -15,17 +15,3 @@ services:
     App\Controller\:
         resource: '../src/Controller/'
         tags: ['controller.service_arguments']
-
-    # Nelmio API Doc Bundle - Service Aliases
-    Nelmio\ApiDocBundle\Render\RenderOpenApi: '@nelmio_api_doc.render_docs'
-
-    # Nelmio API Doc Bundle Controllers
-    Nelmio\ApiDocBundle\Controller\SwaggerUiController:
-        autowire: true
-        autoconfigure: true
-        public: true
-
-    Nelmio\ApiDocBundle\Controller\DocumentationController:
-        autowire: true
-        autoconfigure: true
-        public: true
