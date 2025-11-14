@@ -21,13 +21,31 @@ class UserController extends AbstractController
     ) {}
 
     /**
-     * List all users.
+     * List all users with pagination.
      */
     #[OA\Get(
         path: '/api/users',
         summary: 'List all users',
         security: [['Bearer' => []]],
         tags: ['Users'],
+        parameters: [
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer', default: 1),
+                description: 'Page number',
+                example: 1
+            ),
+            new OA\Parameter(
+                name: 'limit',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer', default: 20, minimum: 1, maximum: 100),
+                description: 'Items per page (max 100)',
+                example: 20
+            )
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -47,6 +65,16 @@ class UserController extends AbstractController
                                 ],
                                 type: 'object'
                             )
+                        ),
+                        new OA\Property(
+                            property: 'pagination',
+                            properties: [
+                                new OA\Property(property: 'page', type: 'integer', example: 1),
+                                new OA\Property(property: 'limit', type: 'integer', example: 20),
+                                new OA\Property(property: 'total', type: 'integer', example: 150),
+                                new OA\Property(property: 'total_pages', type: 'integer', example: 8)
+                            ],
+                            type: 'object'
                         )
                     ]
                 )
@@ -54,12 +82,15 @@ class UserController extends AbstractController
         ]
     )]
     #[Route('', name: 'list', methods: ['GET'])]
-    public function list(): JsonResponse
+    public function list(Request $request): JsonResponse
     {
         try {
-            $users = $this->userService->findAllUsers();
+            $page = (int) $request->query->get('page', 1);
+            $limit = (int) $request->query->get('limit', 20);
 
-            $data = $this->serializer->normalize($users, null, [
+            $result = $this->userService->findUsersPaginated($page, $limit);
+
+            $data = $this->serializer->normalize($result['users'], null, [
                 'groups' => ['user:read'],
                 'circular_reference_handler' => function ($object) {
                     return $object->getId();
@@ -68,7 +99,13 @@ class UserController extends AbstractController
 
             return $this->json([
                 'status' => 'success',
-                'data' => $data
+                'data' => $data,
+                'pagination' => [
+                    'page' => $result['page'],
+                    'limit' => $result['limit'],
+                    'total' => $result['total'],
+                    'total_pages' => $result['total_pages']
+                ]
             ]);
         } catch (\Exception $e) {
             return $this->json([

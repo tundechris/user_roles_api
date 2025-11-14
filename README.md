@@ -30,33 +30,6 @@ A RESTful API for managing users and roles with JWT authentication and authoriza
 
 ## Installation
 
-### Quick Setup (Recommended)
-
-Use the Makefile for automated setup:
-
-```bash
-# Clone the repository
-git clone https://github.com/tundechris/user_roles_api.git
-cd user_roles_api
-
-# Run automated setup
-make setup
-
-# Edit .env with your database credentials
-# Then create and migrate the database
-make db-create
-make db-migrate
-
-# Start the development server
-make serve
-```
-
-Run `make help` to see all available commands.
-
-### Manual Setup
-
-If you prefer manual setup, follow these steps:
-
 #### 1. Clone the repository
 
 ```bash
@@ -143,37 +116,55 @@ php -S localhost:8000 -t public/
 
 The API will be available at `http://localhost:8000/api`
 
-## Makefile Commands
+## Test Data Fixtures
 
-The project includes a Makefile for common development tasks. Run `make help` to see all available commands:
+The project includes comprehensive test fixtures for development and testing purposes. Load them using:
 
-### Setup & Installation
-- `make setup` - Complete automated setup (install, env, jwt, instructions)
-- `make install` - Install composer dependencies
-- `make env-setup` - Create .env from .env.example
-- `make jwt-generate` - Generate JWT public/private keys
+```bash
+php bin/console doctrine:fixtures:load
+```
 
-### Database
-- `make db-create` - Create the database
-- `make db-migrate` - Run database migrations
-- `make db-reset` - Drop, create and migrate database (⚠ DESTRUCTIVE)
-- `make db-fixtures` - Load database fixtures
-- `make migration` - Create a new migration
+### Available Test Users
 
-### Testing
-- `make test` - Run all tests
-- `make test-unit` - Run unit tests only
-- `make test-integration` - Run integration tests only
-- `make test-functional` - Run functional tests only
+After loading fixtures, the following test accounts are available:
 
-### Development
-- `make serve` - Start development server
-- `make cache-clear` - Clear application cache
-- `make routes` - Show all routes
-- `make services` - Show all services
-- `make validate` - Validate database schema
-- `make lint` - Lint PHP files
-- `make clean` - Clean var/ directory (cache, logs)
+| Username | Email | Password | Roles | Status |
+|----------|-------|----------|-------|--------|
+| superadmin | superadmin@example.com | SuperAdmin123! | ROLE_SUPER_ADMIN | Active |
+| admin | admin@example.com | Admin123! | ROLE_ADMIN | Active |
+| moderator | moderator@example.com | Moderator123! | ROLE_MODERATOR | Active |
+| poweruser | power.user@example.com | Power123! | ROLE_ADMIN, ROLE_MODERATOR | Active |
+| johndoe | john.doe@example.com | User123! | ROLE_USER | Active |
+| janedoe | jane.doe@example.com | User123! | ROLE_USER | Active |
+| alice | alice@example.com | Alice123! | ROLE_USER | Active |
+| bob | bob@example.com | Bob123! | ROLE_USER | Active |
+| charlie | charlie@example.com | Charlie123! | ROLE_USER | Active |
+| inactiveuser | inactive@example.com | Inactive123! | ROLE_USER | Inactive |
+
+### Available Roles
+
+| Role Name | Description | Permissions |
+|-----------|-------------|-------------|
+| ROLE_USER | Standard user with basic access | read:own-profile, update:own-profile |
+| ROLE_MODERATOR | Moderator with extended permissions | read:own-profile, update:own-profile, read:users, moderate:content |
+| ROLE_ADMIN | Administrator with full user management | read:own-profile, update:own-profile, read:users, create:users, update:users, delete:users, read:roles, assign:roles |
+| ROLE_SUPER_ADMIN | Super administrator with complete system access | read:*, create:*, update:*, delete:*, manage:system |
+
+You can use these accounts to test authentication, authorization, and different permission levels.
+
+## API Documentation
+
+Interactive API documentation is available via Swagger UI:
+
+```
+http://localhost:8000/api/doc
+```
+
+You can explore all endpoints, view request/response schemas, and test API calls directly from the browser. The OpenAPI specification JSON is available at:
+
+```
+http://localhost:8000/api/doc.json
+```
 
 ## API Endpoints
 
@@ -220,13 +211,80 @@ Content-Type: application/json
 **Response:**
 ```json
 {
-    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+    "refresh_token": "a1b2c3d4e5f6...",
+    "expires_in": 3600,
+    "refresh_expires_in": 2592000
 }
 ```
 
-Use the token in subsequent requests:
+Use the access token in subsequent requests:
 ```http
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...
+```
+
+**Note:** The access token expires after 1 hour. Use the refresh token to get a new access token without re-authenticating.
+
+#### Refresh Token
+```http
+POST /api/auth/refresh
+Content-Type: application/json
+
+{
+    "refresh_token": "a1b2c3d4e5f6..."
+}
+```
+
+**Response:**
+```json
+{
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+    "refresh_token": "x9y8z7w6v5u4...",
+    "expires_in": 3600,
+    "refresh_expires_in": 2592000
+}
+```
+
+**Note:** Both the access token and refresh token are rotated (old tokens are revoked, new ones issued).
+
+#### Request Password Reset
+```http
+POST /api/auth/password-reset/request
+Content-Type: application/json
+
+{
+    "email": "john@example.com"
+}
+```
+
+**Response:**
+```json
+{
+    "status": "success",
+    "message": "If the email exists, a password reset link has been sent",
+    "reset_token": "abc123xyz789..." // Only in development mode
+}
+```
+
+**Note:** For security, the response is always successful regardless of whether the email exists. In production, a reset link would be sent via email. In development mode, the token is included in the response for testing.
+
+#### Confirm Password Reset
+```http
+POST /api/auth/password-reset/confirm
+Content-Type: application/json
+
+{
+    "token": "abc123xyz789...",
+    "password": "newSecurePassword123"
+}
+```
+
+**Response:**
+```json
+{
+    "status": "success",
+    "message": "Password has been reset successfully"
+}
 ```
 
 ### User Management
@@ -235,8 +293,33 @@ All user endpoints require authentication (except registration).
 
 #### List all users
 ```http
-GET /api/users
+GET /api/users?page=1&limit=20
 Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page, max 100 (default: 20)
+
+**Response:**
+```json
+{
+    "status": "success",
+    "data": [
+        {
+            "id": 1,
+            "username": "johndoe",
+            "email": "john@example.com",
+            "isActive": true
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 150,
+        "total_pages": 8
+    }
+}
 ```
 
 #### Get user by ID
@@ -318,8 +401,32 @@ All role endpoints require authentication.
 
 #### List all roles
 ```http
-GET /api/roles
+GET /api/roles?page=1&limit=20
 Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page, max 100 (default: 20)
+
+**Response:**
+```json
+{
+    "status": "success",
+    "data": [
+        {
+            "id": 1,
+            "name": "ROLE_ADMIN",
+            "description": "Administrator role"
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 50,
+        "total_pages": 3
+    }
+}
 ```
 
 #### Get role by ID
@@ -562,16 +669,17 @@ For issues and questions, please create an issue in the GitHub repository.
 
 ## TODO / Future Enhancements
 
-- [ ] Implement token refresh mechanism
-- [ ] Add pagination for list endpoints
-- [ ] Implement password reset functionality
+- [x] Implement token refresh mechanism - Completed
+- [x] Add pagination for list endpoints - Completed
+- [x] Implement password reset functionality - Completed
 - [ ] Add email verification for new users
 - [ ] Implement rate limiting
-- [ ] Add API documentation (Swagger/OpenAPI)
+- [x] Add API documentation (Swagger/OpenAPI) - Completed
 - [ ] Add more comprehensive test coverage
 - [ ] Implement user activity logging
 - [ ] Add role permissions enforcement via Voters
 - [ ] Docker containerization
+- [ ] Email sending service for password reset notifications
 
 ---
 

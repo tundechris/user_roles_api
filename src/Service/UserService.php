@@ -129,6 +129,22 @@ class UserService
     }
 
     /**
+     * Find users with pagination.
+     *
+     * @return array{users: User[], total: int, page: int, limit: int, total_pages: int}
+     */
+    public function findUsersPaginated(int $page = 1, int $limit = 20): array
+    {
+        // Ensure page is at least 1
+        $page = max(1, $page);
+
+        // Ensure limit is between 1 and 100
+        $limit = max(1, min(100, $limit));
+
+        return $this->userRepository->findPaginated($page, $limit);
+    }
+
+    /**
      * Assign roles to user.
      *
      * @param int[] $roleIds
