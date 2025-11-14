@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Service\RoleService;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +23,35 @@ class RoleController extends AbstractController
     /**
      * List all roles.
      */
+    #[OA\Get(
+        path: '/api/roles',
+        summary: 'List all roles',
+        security: [['Bearer' => []]],
+        tags: ['Roles'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successful operation',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'status', type: 'string', example: 'success'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'id', type: 'integer', example: 1),
+                                    new OA\Property(property: 'name', type: 'string', example: 'ROLE_ADMIN'),
+                                    new OA\Property(property: 'description', type: 'string', example: 'Administrator role')
+                                ],
+                                type: 'object'
+                            )
+                        )
+                    ]
+                )
+            )
+        ]
+    )]
     #[Route('', name: 'list', methods: ['GET'])]
     public function list(): JsonResponse
     {
@@ -85,6 +115,44 @@ class RoleController extends AbstractController
     /**
      * Create new role.
      */
+    #[OA\Post(
+        path: '/api/roles',
+        summary: 'Create new role',
+        security: [['Bearer' => []]],
+        tags: ['Roles'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['name'],
+                properties: [
+                    new OA\Property(property: 'name', type: 'string', example: 'ROLE_ADMIN'),
+                    new OA\Property(property: 'description', type: 'string', example: 'Administrator role')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Role created successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'status', type: 'string', example: 'success'),
+                        new OA\Property(property: 'message', type: 'string', example: 'Role created successfully'),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'integer', example: 1),
+                                new OA\Property(property: 'name', type: 'string', example: 'ROLE_ADMIN'),
+                                new OA\Property(property: 'description', type: 'string', example: 'Administrator role')
+                            ],
+                            type: 'object'
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: 'Invalid input data')
+        ]
+    )]
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
