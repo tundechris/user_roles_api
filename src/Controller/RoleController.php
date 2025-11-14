@@ -1,0 +1,313 @@
+<?php
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use App\Service\RoleService;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\SerializerInterface;
+
+#[Route('/api/roles', name: 'api_roles_')]
+class RoleController extends AbstractController
+{
+    public function __construct(
+        private readonly RoleService $roleService,
+        private readonly SerializerInterface $serializer
+    ) {}
+
+    /**
+     * List all roles.
+     */
+    #[Route('', name: 'list', methods: ['GET'])]
+    public function list(): JsonResponse
+    {
+        try {
+            $roles = $this->roleService->findAllRoles();
+
+            $data = $this->serializer->normalize($roles, null, [
+                'groups' => ['role:read'],
+                'circular_reference_handler' => function ($object) {
+                    return $object->getId();
+                }
+            ]);
+
+            return $this->json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get role by ID.
+     */
+    #[Route('/{id}', name: 'show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function show(int $id): JsonResponse
+    {
+        try {
+            $role = $this->roleService->findRoleById($id);
+
+            if (!$role) {
+                return $this->json([
+                    'status' => 'error',
+                    'message' => 'Role not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $data = $this->serializer->normalize($role, null, [
+                'groups' => ['role:read'],
+                'circular_reference_handler' => function ($object) {
+                    return $object->getId();
+                }
+            ]);
+
+            return $this->json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Create new role.
+     */
+    #[Route('', name: 'create', methods: ['POST'])]
+    public function create(Request $request): JsonResponse
+    {
+        try {
+            $data = json_decode($request->getContent(), true);
+
+            if (!$data) {
+                return $this->json([
+                    'status' => 'error',
+                    'message' => 'Invalid JSON'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $role = $this->roleService->createRole($data);
+
+            $responseData = $this->serializer->normalize($role, null, [
+                'groups' => ['role:read'],
+                'circular_reference_handler' => function ($object) {
+                    return $object->getId();
+                }
+            ]);
+
+            return $this->json([
+                'status' => 'success',
+                'message' => 'Role created successfully',
+                'data' => $responseData
+            ], Response::HTTP_CREATED);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Update role.
+     */
+    #[Route('/{id}', name: 'update', methods: ['PUT'], requirements: ['id' => '\d+'])]
+    public function update(int $id, Request $request): JsonResponse
+    {
+        try {
+            $role = $this->roleService->findRoleById($id);
+
+            if (!$role) {
+                return $this->json([
+                    'status' => 'error',
+                    'message' => 'Role not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $data = json_decode($request->getContent(), true);
+
+            if (!$data) {
+                return $this->json([
+                    'status' => 'error',
+                    'message' => 'Invalid JSON'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $role = $this->roleService->updateRole($role, $data);
+
+            $responseData = $this->serializer->normalize($role, null, [
+                'groups' => ['role:read'],
+                'circular_reference_handler' => function ($object) {
+                    return $object->getId();
+                }
+            ]);
+
+            return $this->json([
+                'status' => 'success',
+                'message' => 'Role updated successfully',
+                'data' => $responseData
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Partial update role.
+     */
+    #[Route('/{id}', name: 'patch', methods: ['PATCH'], requirements: ['id' => '\d+'])]
+    public function patch(int $id, Request $request): JsonResponse
+    {
+        return $this->update($id, $request);
+    }
+
+    /**
+     * Delete role.
+     */
+    #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
+    public function delete(int $id): JsonResponse
+    {
+        try {
+            $role = $this->roleService->findRoleById($id);
+
+            if (!$role) {
+                return $this->json([
+                    'status' => 'error',
+                    'message' => 'Role not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $this->roleService->deleteRole($role);
+
+            return $this->json([
+                'status' => 'success',
+                'message' => 'Role deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get users with this role.
+     */
+    #[Route('/{id}/users', name: 'users', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function getUsers(int $id): JsonResponse
+    {
+        try {
+            $role = $this->roleService->getRoleWithUsers($id);
+
+            if (!$role) {
+                return $this->json([
+                    'status' => 'error',
+                    'message' => 'Role not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $users = $role->getUsers()->toArray();
+
+            $data = $this->serializer->normalize($users, null, [
+                'groups' => ['user:read'],
+                'circular_reference_handler' => function ($object) {
+                    return $object->getId();
+                }
+            ]);
+
+            return $this->json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Search roles.
+     */
+    #[Route('/search', name: 'search', methods: ['GET'])]
+    public function search(Request $request): JsonResponse
+    {
+        try {
+            $query = $request->query->get('q', '');
+
+            if (empty($query)) {
+                return $this->json([
+                    'status' => 'error',
+                    'message' => 'Search query parameter "q" is required'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $roles = $this->roleService->searchRoles($query);
+
+            $data = $this->serializer->normalize($roles, null, [
+                'groups' => ['role:read'],
+                'circular_reference_handler' => function ($object) {
+                    return $object->getId();
+                }
+            ]);
+
+            return $this->json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get role statistics.
+     */
+    #[Route('/stats', name: 'stats', methods: ['GET'])]
+    public function statistics(): JsonResponse
+    {
+        try {
+            $stats = $this->roleService->getRoleStatistics();
+
+            return $this->json([
+                'status' => 'success',
+                'data' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+}
